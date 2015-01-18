@@ -15,12 +15,12 @@ module Calabash
       # @param {String} command the JavaScript snippet to execute
       # @return {Object} the result returned by the UIA process
       def uia(command, options={})
-        # UIA only makes sense if there is a run loop
-        launcher = Calabash::Cucumber::Launcher.launcher_if_used
-        run_loop = launcher && launcher.active? && launcher.run_loop
-        raise ArgumentError, 'the current launcher must be active and be attached to a run_loop' unless run_loop
-        raise ArgumentError, 'please supply :command' unless command
 
+        unless command
+          raise ArgumentError, "Expected a command argument but got '#{command}'"
+        end
+
+        # UIA only makes sense if there is a run loop
         strategy = run_loop[:uia_strategy]
         case strategy
           when :preferences, :shared_element
@@ -56,20 +56,13 @@ module Calabash
                 raise RuntimeError, "expected '#{status}' to be one of #{candidates}"
             end
           else
-            candidates = [:preferences, :shared_element, :host]
-            raise ArgumentError, "expected '#{run_loop[:uia_strategy]}' to be one of #{candidates}"
+            raise "Unknown UIA strategy '#{strategy}'; expected {:host | :preferences | :shared_element}"
         end
       end
 
 
       # @!visibility private
       def uia_wait_tap(query, options={})
-        launcher = Calabash::Cucumber::Launcher.launcher_if_used
-        run_loop = launcher && launcher.active? && launcher.run_loop
-
-        unless run_loop
-          raise 'The current launcher must be active and be attached to a run_loop'
-        end
 
         unless query
           raise ArgumentError, "Expected a query argument but got '#{query}'"
@@ -506,6 +499,17 @@ module Calabash
         elsif not options[:place]
           raise 'Either :place or :latitude and :longitude must be specified.'
         end
+      end
+
+      def run_loop
+        launcher = Calabash::Cucumber::Launcher.launcher_if_used
+        run_loop = launcher && launcher.active? && launcher.run_loop
+
+        unless run_loop
+          raise 'The current launcher must be active and be attached to a run_loop'
+        end
+
+        run_loop
       end
 
       def uia_result(s)
